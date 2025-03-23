@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Mental WorkerManAI</title>
+    <style>
+        @font-face {
+            font-family: 'Old English Text MT';
+            src: url('https://db.onlinewebfonts.com/t/10100c8172c1ce8df6481d20080d9991.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Modern Aesthetic';
+            src: url('https://db.onlinewebfonts.com/t/1c587cd97662762b24664212f5788a96.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            background-color: #0f0f1a;
+            font-family: 'Modern Aesthetic', sans-serif;
+            height: 100vh;
+            position: relative;
+            cursor: grab;
+            color: #ffffff;
+        }
+        
+        body:active {
+            cursor: grabbing;
+        }
+        
+        #mindmap-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-origin: center center;
+            transition: transform 0.2s ease-out;
+        }
+        
+        #center-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Old English Text MT', serif;
+            font-size: 3.5rem;
+            color: #b1afe3;
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 0 10px rgba(177, 175, 227, 0.5);
+            opacity: 1;
+        }
+        
+        #search-container {
+            position: absolute;
+            top: calc(50% + 50px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 300px;
+        }
+        
+        #search-input {
+            width: 100%;
+            padding: 10px 15px;
+            background-color: rgba(25, 25, 35, 0.7);
+            border: 1px solid #8995ca;
+            border-radius: 25px;
+            color: #fff;
+            font-family: 'Modern Aesthetic', sans-serif;
+            font-size: 1.1rem;
+            backdrop-filter: blur(5px);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        #search-input:focus {
+            box-shadow: 0 0 10px rgba(137, 149, 202, 0.5);
+            transform: scale(1.02);
+        }
+        
+        .concept {
+            position: absolute;
+            padding: 12px 18px;
+            border-radius: 25px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #8995ca;
+            font-size: 1.1rem;
+            font-family: 'Modern Aesthetic', sans-serif;
+            white-space: nowrap;
+            will-change: transform, left, top;
+            opacity: 1;
+            z-index: 5;
+        }
+        
+        .concept:hover {
+            transform: scale(1.05);
+            text-shadow: 0 0 8px rgba(137, 149, 202, 0.8);
+            color: #a7b2e0;
+            z-index: 6;
+        }
+        
+        .concept.active {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px rgba(137, 149, 202, 1);
+            color: #b1afe3;
+            z-index: 7;
+        }
+        
+        /* Estilo especial para "Únete Ahora" */
+        .concept.special {
+            background-color: #8995ca;
+            color: #ffffff;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 15px rgba(137, 149, 202, 0.8);
+            border: 2px solid #ffffff;
+            animation: pulse 2s infinite;
+        }
+        
+        .concept.special:hover {
+            background-color: #b1afe3;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(177, 175, 227, 1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        #content-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            background-color: white;
+            border-radius: 15px;
+            padding: 30px;
+            z-index: 20;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+            font-family: 'Modern Aesthetic', sans-serif;
+        }
+        
+        #modal-title {
+            font-size: 2rem;
+            color: #8995ca;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(137, 149, 202, 0.2);
+            padding-bottom: 15px;
+        }
+        
+        #modal-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        #modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: #8995ca;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        #modal-close:hover {
+            color: #b1afe3;
+        }
+        
+        #backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 15;
+        }
+        
+        #search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: rgba(25, 25, 35, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            margin-top: 10px;
+            display: none;
+            z-index: 11;
+            border: 1px solid #8995ca;
+        }
+        
+        .search-result {
+            padding: 12px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            color: #fff;
+            border-bottom: 1px solid rgba(137, 149, 202, 0.2);
+        }
+        
+        .search-result:hover {
+            background-color: rgba(137, 149, 202, 0.3);
+            color: #b1afe3;
+        }
+        
+        .search-result:last-child {
+            border-bottom: none;
+        }
+        
+        #zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(20, 20, 35, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #a7b2e0;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(137, 149, 202, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .zoom-btn:hover {
+            background-color: rgba(30, 30, 50, 0.8);
+            transform: scale(1.05);
+            color: #c4d1ff;
+        }
+        
+        .zoom-level {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 15px;
+            height: 40px;
+            background-color: rgba(20, 20, 35, 0.7);
+            border-radius: 20px;
+            font-size: 14px;
+            color: #a7b2e0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(137, 149, 202, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="mindmap-container">
+        <h1 id="center-title">WorkerManAI</h1>
+        <div id="search-container">
+            <input type="text" id="search-input" placeholder="Buscar conceptos...">
+            <div id="search-results"></div>
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+    
+    <div id="zoom-controls">
+        <button class="zoom-btn" id="zoom-out">-</button>
+        <div class="zoom-level" id="zoom-level">100%</div>
+        <button class="zoom-btn" id="zoom-in">+</button>
+    </div>
+    
+    <div id="backdrop"></div>
+    <div id="content-modal">
+        <h2 id="modal-title"></h2>
+        <div id="modal-content"></div>
+        <button id="modal-close">×</button>
+    </div>
+
+    <script>
+        // Datos del mapa mental
+        const concepts = [
+            {
+                id: 'what-is-it',
+                title: '¿Qué es?',
+                description: `<p>WorkerManAI es un agente de inteligencia artificial avanzado impulsado por la tecnología DeepSeek, específicamente diseñado para ayudar a estudiantes automatizando tareas académicas.</p>
+                              <p>Es una herramienta revolucionaria que puede crear varios tipos de contenido académico incluyendo informes, guías, presentaciones, tesis y más - todo mientras sigue instrucciones específicas, rúbricas o requisitos proporcionados por el usuario.</p>
+                              <p>Piensa en él como tu asistente académico personal que trabaja incansablemente para ayudarte a completar tus tareas con calidad profesional, ahorrándote tiempo valioso en el proceso.</p>`,
+                weight: 1.0
+            },
+            {
+                id: 'what-can-it-do',
+                title: '¿Qué puede hacer?',
+                description: `<p>WorkerManAI es capaz de realizar una amplia gama de tareas académicas:</p>
+                              <ul>
+                                <li>Crear informes detallados siguiendo requisitos específicos de formato (como APA)</li>
+                                <li>Desarrollar presentaciones de PowerPoint con estructura adecuada y elementos visuales</li>
+                                <li>Generar trabajos de investigación completos con citas y referencias</li>
+                                <li>Escribir tesis con perspectivas o argumentos específicos</li>
+                                <li>Producir informes científicos o matemáticos con información precisa</li>
+                                <li>Acceder a Internet para recopilar información relevante y actualizada</li>
+                                <li>Añadir imágenes apropiadas para mejorar el contenido visual</li>
+                                <li>Seguir rúbricas o instrucciones detalladas para cumplir con los requisitos de la tarea</li>
+                              </ul>
+                              <p>Todo el contenido se crea con alta calidad, organización adecuada y atención al detalle.</p>`,
+                weight: 0.9
+            },
+            {
+                id: 'what-cant-it-do',
+                title: "¿Qué no puede hacer?",
+                description: `<p>Aunque WorkerManAI es potente, tiene ciertas limitaciones:</p>
+                              <ul>
+                                <li>No puede asistir físicamente a clases o realizar exámenes por ti</li>
+                                <li>No puede garantizar que el contenido esté completamente libre de plagio (siempre revisa y haz ediciones)</li>
+                                <li>No puede reemplazar el proceso de aprendizaje ni ayudarte a desarrollar habilidades de pensamiento crítico</li>
+                                <li>No puede garantizar calificaciones perfectas (ya que los criterios de evaluación pueden variar según el instructor)</li>
+                                <li>No puede crear contenido para propósitos académicos deshonestos (verifica las políticas de tu institución)</li>
+                                <li>No puede proporcionar tutoría en tiempo real ni responder preguntas durante un examen</li>
+                                <li>No puede acceder a bases de datos restringidas o materiales que requieran credenciales especiales</li>
+                              </ul>
+                              <p>WorkerManAI está diseñado para ser una herramienta de eficiencia, no un reemplazo para la educación en sí.</p>`,
+                weight: 0.7
+            },
+            {
+                id: 'how-to-use',
+                title: '¿Cómo usarlo correctamente?',
+                description: `<p>Para obtener los mejores resultados de WorkerManAI:</p>
+                              <ol>
+                                <li>Proporciona instrucciones claras y detalladas, incluyendo requisitos de la tarea, número de palabras, estilo de formato, etc.</li>
+                                <li>Incluye la rúbrica o criterios de calificación si están disponibles</li>
+                                <li>Especifica cualquier punto de vista o perspectiva particular que desees que tenga la tarea</li>
+                                <li>Menciona cualquier fuente específica que deba incluirse</li>
+                                <li>Permite tiempo de procesamiento suficiente para tareas complejas</li>
+                                <li>Revisa el contenido generado y haz ediciones personales para añadir tu voz</li>
+                                <li>Usa el contenido como una base sobre la que puedes construir y personalizar</li>
+                                <li>Siempre verifica hechos y citas antes de entregar</li>
+                              </ol>
+                              <p>Recuerda que la calidad del resultado depende en gran medida de la claridad y exhaustividad de tus instrucciones de entrada.</p>`,
+                weight: 0.85
+            },
+            {
+                id: 'tips-for-use',
+                title: 'Consejos de uso',
+                description: `<p>Aprovecha al máximo WorkerManAI con estos consejos profesionales:</p>
+                              <ul>
+                                <li>Divide las tareas complejas en solicitudes más pequeñas y manejables</li>
+                                <li>Siempre revisa y personaliza el contenido generado para reflejar tu propio estilo de escritura</li>
+                                <li>Utiliza el tiempo ahorrado para comprender profundamente la materia</li>
+                                <li>Ten a mano las instrucciones de la tarea cuando hagas tu solicitud</li>
+                                <li>Para presentaciones, especifica la audiencia y la duración de la presentación</li>
+                                <li>Solicita esquemas antes de las tareas completas para asegurar que la dirección sea correcta</li>
+                                <li>Guarda y organiza el contenido generado por IA para referencia futura</li>
+                                <li>Usa la herramienta para generar materiales de estudio o resúmenes de temas complejos</li>
+                                <li>Comienza temprano en lugar de esperar hasta el último minuto</li>
+                              </ul>
+                              <p>La herramienta funciona mejor cuando la usas de manera estratégica y reflexiva.</p>`,
+                weight: 0.8
+            },
+            {
+                id: 'how-to-access',
+                title: '¿Cómo acceder?',
+                description: `<p>Acceder a WorkerManAI es simple y conveniente:</p>
+                              <ol>
+                                <li>Regístrate para obtener una cuenta en nuestro sitio web oficial</li>
+                                <li>Elige un plan de suscripción que se ajuste a tus necesidades</li>
+                                <li>Una vez registrado, puedes acceder a WorkerManAI a través de:
+                                  <ul>
+                                    <li>Nuestra plataforma web (funciona en cualquier navegador)</li>
+                                    <li>Nuestra aplicación móvil dedicada (iOS y Android)</li>
+                                    <li>Integración con WhatsApp (envía mensajes directamente a nuestra IA)</li>
+                                  </ul>
+                                </li>
+                                <li>Sigue las instrucciones en pantalla para enviar los detalles de tu tarea</li>
+                                <li>Recibe tu tarea completada en tu formato preferido</li>
+                              </ol>
+                              <p>Para soporte técnico o preguntas sobre acceso, contacta a nuestro equipo de servicio al cliente a través de la sección de Soporte de nuestro sitio web.</p>`,
+                weight: 0.75
+            },
+            {
+                id: 'who-behind-it',
+                title: '¿Quién está detrás?',
+                description: `<p>WorkerManAI fue desarrollado por un equipo de tecnólogos educativos, especialistas en IA y ex educadores que reconocieron la necesidad de una herramienta que pudiera ayudar a los estudiantes a administrar su tiempo de manera más efectiva.</p>
+                              <p>La tecnología está impulsada por DeepSeek, un sistema de IA avanzado conocido por sus notables capacidades de comprensión del lenguaje y generación de contenido.</p>
+                              <p>Nuestro equipo continúa mejorando y refinando el sistema basándose en comentarios de usuarios y mejores prácticas educativas. Trabajamos estrechamente con asesores académicos para asegurar que la herramienta siga siendo útil mientras fomenta resultados de aprendizaje adecuados.</p>
+                              <p>Aunque mantenemos privacidad sobre las identidades específicas de nuestro equipo de desarrollo, estamos comprometidos con la transparencia sobre cómo funciona la herramienta y cómo debe usarse responsablemente.</p>`,
+                weight: 0.65
+            },
+            {
+                id: 'why-created',
+                title: '¿Por qué fue creado?',
+                description: `<p>WorkerManAI fue creado en respuesta a varias observaciones sobre el sistema educativo moderno:</p>
+                              <ul>
+                                <li>Los estudiantes a menudo dedican tiempo excesivo a tareas que no contribuyen directamente a sus objetivos de aprendizaje más importantes</li>
+                                <li>La educación tradicional se enfoca fuertemente en conocimientos técnicos pero a menudo descuida habilidades prácticas para la vida</li>
+                                <li>Los jóvenes necesitan más tiempo para explorar sus intereses, desarrollar habilidades blandas cruciales y trabajar hacia metas personales</li>
+                                <li>La carga actual de tareas puede ser abrumadora y contribuir al estrés y agotamiento</li>
+                                <li>La gestión del tiempo es una habilidad crítica difícil de desarrollar cuando se está abrumado con tareas</li>
+                              </ul>
+                              <p>La visión del creador no era socavar la educación sino proporcionar una herramienta que ayude a los estudiantes a recuperar su tiempo mientras siguen cumpliendo con los requisitos académicos, permitiéndoles enfocarse en lo que realmente importa para su desarrollo personal y éxito futuro.</p>`,
+                weight: 0.9
+            },
+            {
+                id: 'problem-solves',
+                title: '¿Qué problema resuelve?',
+                description: `<p>WorkerManAI aborda varios problemas críticos que enfrentan los estudiantes de hoy:</p>
+                              <ul>
+                                <li><strong>Restricciones de tiempo:</strong> Al automatizar tareas rutinarias, libera horas valiosas que pueden dedicarse a actividades más significativas</li>
+                                <li><strong>Equilibrio trabajo-vida:</strong> Ayuda a los estudiantes a mantener un equilibrio más saludable entre obligaciones académicas y desarrollo personal</li>
+                                <li><strong>Desarrollo desigual de habilidades:</strong> Da a los estudiantes más tiempo para desarrollar habilidades prácticas para la vida no cubiertas en currículos tradicionales (educación financiera, salud mental, etc.)</li>
+                                <li><strong>Sobrecarga de tareas:</strong> Reduce el estrés y la ansiedad causados por cargas excesivas de tareas</li>
+                                <li><strong>Inconsistencia en la calidad:</strong> Proporciona un estándar consistentemente alto de trabajo que cumple con los requisitos académicos</li>
+                                <li><strong>Enfoque de aprendizaje:</strong> Permite a los estudiantes enfocar su energía en las materias que realmente les apasionan</li>
+                              </ul>
+                              <p>En lugar de reemplazar la educación, WorkerManAI se trata de optimizarla - asegurando que el tiempo y la energía se inviertan donde crearán el mayor valor para el viaje único de cada estudiante.</p>`,
+                weight: 0.85
+            },
+            {
+                id: 'intended-for',
+                title: '¿Para quién está destinado?',
+                description: `<p>WorkerManAI está diseñado principalmente para:</p>
+                              <ul>
+                                <li><strong>Estudiantes de 14-25 años</strong> en entornos de secundaria, bachillerato o universidad</li>
+                                <li>Personas con múltiples responsabilidades (trabajo, familia, actividades extracurriculares) que necesitan optimizar su tiempo</li>
+                                <li>Estudiantes que quieren sobresalir académicamente mientras tienen tiempo para perseguir pasiones e intereses personales</li>
+                                <li>Jóvenes que buscan desarrollar habilidades prácticas para la vida junto con su educación formal</li>
+                                <li>Estudiantes que trabajan mejor con plantillas estructurales o que necesitan asistencia organizando sus pensamientos</li>
+                                <li>Aquellos que quieren reducir el estrés académico mientras mantienen trabajo de calidad</li>
+                              </ul>
+                              <p>La herramienta es especialmente valiosa para estudiantes que reconocen que su tiempo es precioso y quieren ser intencionales sobre cómo lo gastan durante sus años formativos.</p>
+                              <p>Nota: Los usuarios siempre deben adherirse a las políticas de integridad académica de su institución respecto al uso de herramientas de IA.</p>`,
+                weight: 0.7
+            },
+            {
+                id: 'is-it-cheating',
+                title: '¿Es trampa?',
+                description: `<p>La pregunta sobre si usar WorkerManAI constituye "trampa" es compleja y depende del contexto:</p>
+                              <ul>
+                                <li>Muchas instituciones tienen políticas que no han evolucionado al mismo ritmo que la tecnología</li>
+                                <li>Es importante entender las políticas específicas de tu institución sobre el uso de herramientas de IA</li>
+                                <li>En algunos contextos, usar WorkerManAI podría compararse con contratar a un tutor o usar un procesador de textos avanzado</li>
+                                <li>La clave está en cómo se utiliza: como herramienta de aprendizaje y eficiencia vs. como método para evitar completamente el aprendizaje</li>
+                                <li>Siempre recomendamos revisar, personalizar y entender el contenido generado</li>
+                              </ul>
+                              <p>Consideramos que WorkerManAI es una herramienta de asistencia académica, similar a calculadoras en matemáticas o software de edición en diseño. La tecnología siempre ha formado parte de la educación, y las herramientas de IA representan el siguiente paso en esta evolución.</p>`,
+                weight: 0.75
+            },
+            {
+                id: 'ai-detection',
+                title: 'Detección IA',
+                description: `<p>Sobre la detección de contenido generado por IA:</p>
+                              <ul>
+                                <li>Las tecnologías de detección de IA están evolucionando, pero siguen siendo imperfectas</li>
+                                <li>WorkerManAI utiliza técnicas avanzadas para generar contenido que mantiene un estilo natural y humano</li>
+                                <li>El sistema está diseñado para minimizar patrones reconocibles típicos de la generación de IA</li>
+                                <li>La revisión y personalización humana del contenido siempre ayuda a reducir la detectabilidad</li>
+                                <li>Recomendamos usar la herramienta como punto de partida y luego personalizar el contenido con tu propia voz</li>
+                              </ul>
+                              <p>Nos mantenemos actualizados con los avances en detección de IA y continuamente mejoramos nuestros algoritmos para asegurar que el contenido generado sea de la mayor calidad y naturalidad posible.</p>`,
+                weight: 0.6
+            },
+            {
+                id: 'tool-compatibility',
+                title: 'Compatibilidad herramientas',
+                description: `<p>WorkerManAI ha sido diseñado para funcionar con una amplia gama de herramientas educativas:</p>
+                              <ul>
+                                <li>Integración con plataformas comunes como Google Docs, Microsoft Office y LMS populares</li>
+                                <li>Capacidad para generar contenido en múltiples formatos (docx, pdf, pptx, etc.)</li>
+                                <li>Compatibilidad con sistemas de gestión de citas como Zotero, Mendeley y EndNote</li>
+                                <li>Herramientas de exportación para facilitar la entrega en plataformas educativas</li>
+                                <li>Capacidad para ajustarse a diversos estilos de formato (APA, MLA, Chicago, etc.)</li>
+                              </ul>
+                              <p>Continuamente ampliamos nuestras capacidades de integración para asegurar que WorkerManAI se adapte perfectamente a tu flujo de trabajo académico, independientemente de las herramientas que utilices.</p>`,
+                weight: 0.65
+            },
+            {
+                id: 'teacher-conflicts',
+                title: 'Conflictos profesores',
+                description: `<p>Navegar las expectativas de los profesores en la era de la IA puede ser desafiante:</p>
+                              <ul>
+                                <li>Algunos educadores pueden tener reservas sobre el uso de herramientas de IA para tareas académicas</li>
+                                <li>Es recomendable ser transparente cuando las políticas institucionales lo requieran</li>
+                                <li>WorkerManAI puede usarse éticamente como herramienta de aprendizaje y eficiencia</li>
+                                <li>Muchos profesores valoran la originalidad del pensamiento más que la redacción técnica</li>
+                                <li>Considerar WorkerManAI como un asistente de investigación o editor, no como un reemplazo de tu pensamiento crítico</li>
+                              </ul>
+                              <p>La clave para evitar conflictos es entender las expectativas específicas de cada profesor y utilizar la herramienta de manera que complementa, no reemplaza, tu propio aprendizaje y desarrollo académico.</p>`,
+                weight: 0.7
+            },
+            {
+                id: 'ai-dependence',
+                title: 'Dependencia IA',
+                description: `<p>Como con cualquier herramienta potente, es importante considerar el riesgo de dependencia:</p>
+                              <ul>
+                                <li>WorkerManAI está diseñado para aumentar tus capacidades, no para reemplazarlas</li>
+                                <li>Recomendamos usar la herramienta como parte de un enfoque equilibrado del trabajo académico</li>
+                                <li>El valor real está en aprender a colaborar efectivamente con la IA, no en depender completamente de ella</li>
+                                <li>Usa tu tiempo liberado para desarrollar habilidades que las máquinas no pueden replicar: creatividad, pensamiento crítico, inteligencia emocional</li>
+                                <li>Considera establecer límites personales sobre cuándo usar la herramienta</li>
+                              </ul>
+                              <p>Una relación saludable con WorkerManAI implica usarlo como un recurso valioso pero manteniendo tu autonomía intelectual y desarrollo de habilidades fundamentales.</p>`,
+                weight: 0.65
+            },
+            {
+                id: 'false-information',
+                title: 'Información falsa',
+                description: `<p>Sobre la precisión de la información generada:</p>
+                              <ul>
+                                <li>Aunque WorkerManAI está diseñado para proporcionar información precisa, ningún sistema de IA es infalible</li>
+                                <li>Siempre recomendamos verificar hechos y datos críticos, especialmente para trabajos de investigación</li>
+                                <li>El sistema utiliza fuentes actualizadas pero puede haber limitaciones en ciertos temas especializados</li>
+                                <li>Para trabajos académicos rigurosos, usa la herramienta como punto de partida para tu investigación</li>
+                                <li>La revisión crítica del contenido generado es parte del proceso de usar la herramienta responsablemente</li>
+                              </ul>
+                              <p>Estamos constantemente mejorando nuestros sistemas para reducir la generación de información incorrecta, pero la verificación humana sigue siendo una parte importante del proceso.</p>`,
+                weight: 0.7
+            },
+            {
+                id: 'life-purpose',
+                title: 'Propósito vida',
+                description: `<p>WorkerManAI no solo se trata de completar tareas académicas, sino de liberar tiempo para descubrir tu propósito:</p>
+                              <ul>
+                                <li>Al automatizar tareas rutinarias, creas espacio para exploración personal y autodescubrimiento</li>
+                                <li>El tiempo liberado puede invertirse en actividades que realmente alimentan tu pasión y propósito</li>
+                                <li>Muchos usuarios reportan redescubrir intereses que habían abandonado debido a limitaciones de tiempo</li>
+                                <li>La herramienta puede ayudarte a mantener el equilibrio mientras exploras diferentes caminos e intereses</li>
+                                <li>A veces, encontrar tu propósito requiere tiempo para reflexionar y experimentar, algo escaso en el ritmo académico tradicional</li>
+                              </ul>
+                              <p>En cierto sentido, WorkerManAI no es solo una herramienta para tareas escolares: es una herramienta para desbloquear tu potencial humano al liberarte de lo mecánico y darte espacio para lo significativo.</p>`,
+                weight: 0.8
+            },
+            {
+                id: 'secret-community',
+                title: 'Comunidad secreta',
+                description: `<p>Entre los usuarios de WorkerManAI ha surgido una especie de comunidad:</p>
+                              <ul>
+                                <li>Usuarios en todo el mundo comparten estrategias, tips y experiencias sobre cómo maximizar el potencial de la herramienta</li>
+                                <li>Muchos reportan sentirse parte de un movimiento que está redefiniendo la relación entre educación y tecnología</li>
+                                <li>Existen grupos de estudio y comunidades online donde los usuarios colaboran en proyectos y se apoyan mutuamente</li>
+                                <li>Algunos usuarios se convierten en "pioneros" ayudando a otros a adoptar un enfoque más equilibrado del trabajo académico</li>
+                                <li>La comunidad valora el uso ético y el crecimiento personal por encima del simple atajo académico</li>
+                              </ul>
+                              <p>Esta comunidad representa un nuevo paradigma donde la tecnología no solo se usa para cumplir con requisitos, sino para transformar fundamentalmente cómo aprendemos y crecemos.</p>`,
+                weight: 0.6
+            },
+            {
+                id: 'join-now',
+                title: 'Únete Ahora',
+                description: `<p>¡No esperes más para transformar tu vida académica!</p>
+                              <p>Únete a WorkerManAI y comienza a experimentar los beneficios:</p>
+                              <ul>
+                                <li>Acceso inmediato a todas las herramientas y funciones</li>
+                                <li>Soporte prioritario para tus consultas</li>
+                                <li>Actualizaciones regulares con nuevas capacidades</li>
+                                <li>Comunidad de usuarios para compartir tips y experiencias</li>
+                              </ul>
+                              <p>Haz clic para registrarte y dar el primer paso hacia una educación más equilibrada y productiva.</p>
+                              <p><a href="join.html" class="join-button" style="display: inline-block; background-color: #8995ca; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">ÚNETE AHORA</a></p>`,
+                weight: 1.0,
+                isSpecial: true
+            },
+            {
+                id: 'anonymous-use',
+                title: 'Anonimato uso',
+                description: `<p>Entendemos la importancia de la privacidad en el uso de WorkerManAI:</p>
+                              <ul>
+                                <li>Tu uso de la plataforma se mantiene completamente confidencial</li>
+                                <li>No compartimos información de usuarios con instituciones educativas</li>
+                                <li>Los datos de las tareas se procesan con estrictas protecciones de privacidad</li>
+                                <li>Ofrecemos opciones de pago que mantienen tu anonimato</li>
+                                <li>No retenemos contenido generado más allá del tiempo necesario para el servicio</li>
+                              </ul>
+                              <p>Creemos que cada estudiante tiene derecho a explorar herramientas que mejoren su productividad sin temor a repercusiones injustas. Nuestra política de privacidad está diseñada para proteger tu autonomía académica mientras usas nuestros servicios.</p>`,
+                weight: 0.65
+            },
+            {
+                id: 'tech-hypocrisy',
+                title: 'Hipocresía tecnológica',
+                description: `<p>La crítica surge de una aparente paradoja: usar herramientas tecnológicas avanzadas (IA) para rebelarse contra un sistema educativo que, a su vez, se basa en formar trabajadores para un mercado tecnocrático.</p>
+                              <p>Sin embargo, no es hipocresía sino un acto de sabotaje inteligente:</p>
+                              <ul>
+                                <li>"Usar las armas del enemigo": Similar a cómo los movimientos sociales utilizan redes sociales corporativas para organizar protestas</li>
+                                <li>WorkerMan convierte la IA en un "virus": en vez de entrenar para servir a máquinas, las máquinas sirven para liberar tiempo humano</li>
+                                <li>La tecnología nunca es neutral: puede ser opresiva (vigilancia) o subversiva (liberación de tiempo)</li>
+                                <li>Desvía el propósito original: en lugar de optimizar la productividad esclava, optimiza la autonomía vital</li>
+                              </ul>
+                              <p>"No es hipocresía: es piratear el barco del sistema para navegar hacia aguas libres".</p>
+                              <p>La verdadera hipocresía es que el sistema eduque con tecnología pero castigue a quien la use para pensar. WorkerMan no es el problema: es el antídoto tecnológico que el sistema nunca quiso que existiera.</p>`,
+                weight: 0.85
+            }
+        ];
+
+        // Configuración del lienzo para conexiones
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+        let offsetX = 0, offsetY = 0;
+        
+        // Variables para movimiento suave
+        let targetOffsetX = 0, targetOffsetY = 0;
+        let currentVelocityX = 0, currentVelocityY = 0;
+        const smoothingFactor = 0.15; // Factor de suavizado (0-1)
+        
+        // Variables para zoom
+        let scale = 1;
+        let targetScale = 1;
+        const zoomSpeed = 0.1;
+        const minZoom = 0.5;
+        const maxZoom = 2.0;
+        
+        // Almacenar la posición del mouse para efectos de movimiento asimétrico
+        let mouseX = 0, mouseY = 0;
+        
+        // Registro del tiempo de inicio para efectos de animación
+        const startTime = Date.now() * 0.001; // Convertido a segundos
+        
+        // Matriz de conexiones entre conceptos (para definir relaciones)
+        const connections = [];
+        
+        // Generar matriz de conexiones aleatoria basada en pesos
+        function generateConnections() {
+            // Limpiar conexiones previas
+            connections.length = 0;
+            
+            // Para cada par de conceptos, determinar si están conectados
+            for (let i = 0; i < concepts.length; i++) {
+                connections[i] = [];
+                for (let j = 0; j < concepts.length; j++) {
+                    if (i !== j) {
+                        // Calcular la probabilidad de conexión basada en los pesos
+                        const probability = (concepts[i].weight + concepts[j].weight) / 2;
+                        connections[i][j] = Math.random() < probability * 0.7;
+                    } else {
+                        connections[i][j] = false;
+                    }
+                }
+            }
+            
+            // Asegurar que todos los conceptos tengan al menos una conexión
+            for (let i = 0; i < concepts.length; i++) {
+                let hasConnection = false;
+                for (let j = 0; j < concepts.length; j++) {
+                    if (connections[i][j]) {
+                        hasConnection = true;
+                        break;
+                    }
+                }
+                
+                if (!hasConnection) {
+                    // Conectar con un nodo aleatorio
+                    const randomIndex = Math.floor(Math.random() * concepts.length);
+                    if (randomIndex !== i) {
+                        connections[i][randomIndex] = true;
+                    }
+                }
+            }
+        }
+        
+        // Redimensionar lienzo en cambio de tamaño de ventana
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            drawConnections();
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Crear elementos de concepto con posiciones específicas
+        const conceptPositions = [];
+        const conceptVelocities = [];
+        
+        // Función para crear elementos de concepto
+        function createConceptElements() {
+            const container = document.getElementById('mindmap-container');
+            
+            // Eliminar elementos de concepto existentes
+            document.querySelectorAll('.concept').forEach(el => el.remove());
+            
+            // Calcular posiciones si es primera vez
+            if (conceptPositions.length === 0) {
+                generateConnections();
+                
+                concepts.forEach((concept, index) => {
+                    // Posicionar conceptos alrededor del centro en un patrón irregular
+                    const angle = (index / concepts.length) * Math.PI * 2;
+                    
+                    // Organizar los conceptos en toda la pantalla, prioridad horizontal
+                    
+                    // Calcular el número óptimo de elementos por fila en función del ancho de pantalla
+                    // Para pantallas más grandes, más elementos por fila
+                    const baseConceptsPerRow = window.innerWidth < 768 ? 2 : 
+                                              window.innerWidth < 1200 ? 3 : 4;
+                    
+                    // Distribuir los conceptos en un grid más amplio
+                    // Usar el número total de conceptos para determinar una distribución equilibrada
+                    const totalConcepts = concepts.length;
+                    const idealRows = Math.ceil(Math.sqrt(totalConcepts) * 0.75); // Rectangular, más ancho que alto
+                    const conceptsPerRow = Math.ceil(totalConcepts / idealRows);
+                    const rowCount = Math.ceil(totalConcepts / conceptsPerRow);
+                    
+                    // Calcular la posición en la cuadrícula
+                    const row = Math.floor(index / conceptsPerRow);
+                    const col = index % conceptsPerRow;
+                    
+                    // Usar más del espacio disponible de la pantalla (85% ancho, 75% alto)
+                    const usableWidth = window.innerWidth * 0.85;
+                    const usableHeight = window.innerHeight * 0.75;
+                    
+                    // Espaciado para distribuir los elementos
+                    const horizontalSpacing = usableWidth / (conceptsPerRow);
+                    const verticalSpacing = usableHeight / (rowCount + 1);
+                    
+                    // Calcular la posición base con desplazamiento para centrar los elementos
+                    const baseX = (col * horizontalSpacing) - (usableWidth / 2) + (horizontalSpacing / 2);
+                    
+                    // Distribuir verticalmente desde arriba del título (negativo) hasta abajo
+                    // Calcular un desplazamiento que centre verticalmente la cuadrícula
+                    const verticalOffset = 0; // Centro de la pantalla
+                    const baseY = (row * verticalSpacing) - (usableHeight / 3) + verticalOffset;
+                    
+                    // Añadir una variación más significativa para mayor distribución natural
+                    const randomAngle = Math.random() * Math.PI * 2;
+                    const randomVariation = Math.min(horizontalSpacing, verticalSpacing) * 0.15; // 15% del espacio de celda
+                    
+                    // Usar estas coordenadas calculadas en lugar de las posiciones radiales
+                    const randomRadiusVariation = 1; // Mantener para compatibilidad
+                    
+                    conceptPositions.push({
+                        x: baseX + (Math.cos(randomAngle) * randomVariation),
+                        y: baseY + (Math.sin(randomAngle) * randomVariation),
+                        angle: randomAngle,
+                        radius: randomRadiusVariation
+                    });
+                    
+                    // Añadir velocidades iniciales muy bajas
+                    conceptVelocities.push({
+                        x: 0,
+                        y: 0,
+                        angle: 0,
+                        speed: Math.random() * 0.02 + 0.01
+                    });
+                });
+            }
+            
+            // Crear nuevos elementos con el desplazamiento actual
+            concepts.forEach((concept, index) => {
+                const element = document.createElement('div');
+                element.classList.add('concept');
+                element.id = concept.id;
+                element.textContent = concept.title;
+                element.dataset.index = index;
+                
+                // Ajustar el tamaño según el peso/importancia - mayor variación de tamaño
+                const scaleFactor = 0.9 + (concept.weight * 0.7);
+                
+                const position = conceptPositions[index];
+                const x = centerX + position.x * scale + offsetX;
+                const y = centerY + position.y * scale + offsetY;
+                
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+                element.style.transform = `scale(${scaleFactor})`; // Tamaño basado en importancia
+                
+                // Aplicar clase especial para "Únete Ahora"
+                if (concept.isSpecial) {
+                    element.classList.add('special');
+                }
+                
+                // Añadir evento clic para mostrar contenido
+                element.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showConceptContent(concept);
+                });
+                
+                container.appendChild(element);
+            });
+            
+            drawConnections();
+        }
+        
+        // Contar número de conexiones para un concepto
+        function countConnections(index) {
+            let count = 0;
+            for (let i = 0; i < concepts.length; i++) {
+                if (connections[index][i]) {
+                    count++;
+                }
+            }
+            return count;
+        }
+        
+        // Dibujar conexiones entre conceptos
+        function drawConnections() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar conexiones basadas en la matriz de conexiones
+            const conceptElements = document.querySelectorAll('.concept');
+            
+            // Primero dibujar conexiones entre conceptos
+            for (let i = 0; i < conceptElements.length; i++) {
+                const element = conceptElements[i];
+                const rect = element.getBoundingClientRect();
+                const elementX = rect.left + rect.width / 2;
+                const elementY = rect.top + rect.height / 2;
+                
+                for (let j = 0; j < conceptElements.length; j++) {
+                    if (connections[i][j]) {
+                        const otherElement = conceptElements[j];
+                        const otherRect = otherElement.getBoundingClientRect();
+                        const otherX = otherRect.left + otherRect.width / 2;
+                        const otherY = otherRect.top + otherRect.height / 2;
+                        
+                        // Calcular opacidad basada en la distancia - aumentar la opacidad un 70%
+                        const distance = Math.sqrt(Math.pow(elementX - otherX, 2) + Math.pow(elementY - otherY, 2));
+                        const maxDistance = Math.min(window.innerWidth, window.innerHeight) * 1.2;
+                        // Aumentar opacidad base en un 70%
+                        const opacity = (0.05 + 0.05 * (1 - Math.min(distance / maxDistance, 1))) * 1.7;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(elementX, elementY);
+                        ctx.lineTo(otherX, otherY);
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            // Luego dibujar conexiones al centro
+            for (let i = 0; i < conceptElements.length; i++) {
+                const element = conceptElements[i];
+                const rect = element.getBoundingClientRect();
+                const elementX = rect.left + rect.width / 2;
+                const elementY = rect.top + rect.height / 2;
+                
+                // Calcular opacidad basada en el peso del concepto - aumentar para las líneas centrales
+                const opacity = (0.05 + concepts[i].weight * 0.05) * 1.7;
+                
+                ctx.beginPath();
+                ctx.moveTo(elementX, elementY);
+                ctx.lineTo(centerX, centerY);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.lineWidth = concepts[i].weight * 0.8;
+                ctx.stroke();
+            }
+        }
+        
+        // Mostrar contenido del concepto en modal
+        function showConceptContent(concept) {
+            document.getElementById('modal-title').textContent = concept.title;
+            document.getElementById('modal-content').innerHTML = concept.description;
+            document.getElementById('content-modal').style.display = 'block';
+            document.getElementById('backdrop').style.display = 'block';
+            
+            // Resaltar concepto activo
+            document.querySelectorAll('.concept').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(concept.id).classList.add('active');
+            
+            // Aplicar un pequeño efecto de agitación a conceptos relacionados
+            const activeIndex = concepts.findIndex(c => c.id === concept.id);
+            if (activeIndex >= 0) {
+                for (let i = 0; i < concepts.length; i++) {
+                    if (connections[activeIndex][i] || connections[i][activeIndex]) {
+                        const velocity = conceptVelocities[i];
+                        velocity.x += (Math.random() - 0.5) * 4;
+                        velocity.y += (Math.random() - 0.5) * 4;
+                    }
+                }
+            }
+        }
+        
+        // Cerrar modal
+        document.getElementById('modal-close').addEventListener('click', () => {
+            document.getElementById('content-modal').style.display = 'none';
+            document.getElementById('backdrop').style.display = 'none';
+            
+            // Eliminar resaltado
+            document.querySelectorAll('.concept').forEach(el => {
+                el.classList.remove('active');
+            });
+        });
+        
+        document.getElementById('backdrop').addEventListener('click', () => {
+            document.getElementById('content-modal').style.display = 'none';
+            document.getElementById('backdrop').style.display = 'none';
+            
+            // Eliminar resaltado
+            document.querySelectorAll('.concept').forEach(el => {
+                el.classList.remove('active');
+            });
+        });
+        
+        // Funcionalidad de búsqueda
+        const searchInput = document.getElementById('search-input');
+        const searchResults = document.getElementById('search-results');
+        
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value.toLowerCase();
+            const results = concepts.filter(concept => 
+                concept.title.toLowerCase().includes(query) || 
+                concept.description.toLowerCase().includes(query)
+            );
+            
+            displaySearchResults(results);
+        });
+        
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+            
+            if (results.length > 0 && searchInput.value.trim() !== '') {
+                results.forEach(result => {
+                    const resultItem = document.createElement('div');
+                    resultItem.classList.add('search-result');
+                    resultItem.textContent = result.title;
+                    resultItem.addEventListener('click', () => {
+                        showConceptContent(result);
+                        searchResults.style.display = 'none';
+                        searchInput.value = '';
+                    });
+                    searchResults.appendChild(resultItem);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.style.display = 'none';
+            }
+        }
+        
+        // Cerrar resultados de búsqueda al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        // Seguimiento de posición del mouse para efectos asimétricos
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        // Funcionalidad de arrastre más suave
+        document.addEventListener('mousedown', (e) => {
+            if (!e.target.closest('.concept') && 
+                !e.target.closest('#content-modal') && 
+                !e.target.closest('#search-container') &&
+                !e.target.closest('#zoom-controls')) {
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                
+                // Detener cualquier movimiento de inercia
+                currentVelocityX = 0;
+                currentVelocityY = 0;
+                
+                // Cambiar estilo del cursor
+                document.body.style.cursor = 'grabbing';
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                
+                // Actualizar la posición objetivo directamente
+                targetOffsetX += deltaX;
+                targetOffsetY += deltaY;
+                
+                // Actualizar velocidad actual
+                currentVelocityX = deltaX * 0.8 + currentVelocityX * 0.2;
+                currentVelocityY = deltaY * 0.8 + currentVelocityY * 0.2;
+                
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                
+                // Restaurar el cursor
+                document.body.style.cursor = 'grab';
+                
+                // Aplicar inercia al soltar
+                const friction = 0.95; // Factor de fricción
+                const inertia = 20; // Número de frames de inercia
+                
+                let frame = 0;
+                
+                function applyInertia() {
+                    if (frame++ < inertia && !isDragging) {
+                        targetOffsetX += currentVelocityX;
+                        targetOffsetY += currentVelocityY;
+                        
+                        currentVelocityX *= friction;
+                        currentVelocityY *= friction;
+                        
+                        requestAnimationFrame(applyInertia);
+                    }
+                }
+                
+                applyInertia();
+            }
+        });
+        
+        // Variable para controlar si es la primera carga
+        let isInitialLoad = true;
+        
+        // Introducir un ligero movimiento inicial y luego marcar como ya cargado
+        setTimeout(() => {
+            applyShakeEffect();
+            
+            // Desactivar la animación inicial después de un tiempo
+            setTimeout(() => {
+                isInitialLoad = false;
+            }, 3000);
+        }, 500);
+        
+        // Funcionalidad de zoom con rueda del mouse
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const delta = -Math.sign(e.deltaY) * zoomSpeed;
+            const newScale = Math.max(minZoom, Math.min(maxZoom, targetScale + delta));
+            
+            if (newScale !== targetScale) {
+                // Calcular ajuste de desplazamiento para zoom centrado en el cursor
+                const rect = canvas.getBoundingClientRect();
+                const mouseXRelativeToCenterBeforeZoom = (e.clientX - rect.left) - centerX;
+                const mouseYRelativeToCenterBeforeZoom = (e.clientY - rect.top) - centerY;
+                
+                // Calcular nuevo desplazamiento para mantener el cursor en la misma posición
+                const scaleFactor = newScale / targetScale;
+                const newOffsetX = targetOffsetX - mouseXRelativeToCenterBeforeZoom * (scaleFactor - 1);
+                const newOffsetY = targetOffsetY - mouseYRelativeToCenterBeforeZoom * (scaleFactor - 1);
+                
+                targetScale = newScale;
+                targetOffsetX = newOffsetX;
+                targetOffsetY = newOffsetY;
+                
+                // Actualizar la visualización del nivel de zoom
+                updateZoomLevel();
+                
+                // Añadir un pequeño efecto de sacudida a los conceptos
+                applyShakeEffect();
+            }
+        }, { passive: false });
+        
+        // Botones de zoom
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            const newScale = Math.min(maxZoom, targetScale + zoomSpeed);
+            if (newScale !== targetScale) {
+                targetScale = newScale;
+                updateZoomLevel();
+                applyShakeEffect();
+            }
+        });
+        
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            const newScale = Math.max(minZoom, targetScale - zoomSpeed);
+            if (newScale !== targetScale) {
+                targetScale = newScale;
+                updateZoomLevel();
+                applyShakeEffect();
+            }
+        });
+        
+        // Actualizar visualización del nivel de zoom
+        function updateZoomLevel() {
+            document.getElementById('zoom-level').textContent = `${Math.round(targetScale * 100)}%`;
+        }
+        
+        // Aplicar un efecto de sacudida a los conceptos
+        function applyShakeEffect() {
+            // Sacudida más sutil
+            concepts.forEach((concept, index) => {
+                const velocity = conceptVelocities[index];
+                velocity.x += (Math.random() - 0.5) * 0.5;
+                velocity.y += (Math.random() - 0.5) * 0.5;
+            });
+            
+            // Programar el retorno gradual a la posición estable
+            setTimeout(() => {
+                concepts.forEach((concept, index) => {
+                    const velocity = conceptVelocities[index];
+                    velocity.x *= 0.8;
+                    velocity.y *= 0.8;
+                });
+            }, 1000);
+        }
+        
+        // Actualizar posiciones para el movimiento suave y asimétrico
+        function updatePositions() {
+            // Actualizar escala con suavidad
+            scale += (targetScale - scale) * 0.1;
+            
+            // Calcular diferencia entre posición actual y objetivo
+            const deltaX = targetOffsetX - offsetX;
+            const deltaY = targetOffsetY - offsetY;
+            
+            // Aplicar suavizado
+            offsetX += deltaX * smoothingFactor;
+            offsetY += deltaY * smoothingFactor;
+            
+            // Obtener todos los elementos de concepto
+            const conceptElements = document.querySelectorAll('.concept');
+            
+            // Normalizar la posición del mouse en relación con la ventana
+            const normalizedMouseX = (mouseX / window.innerWidth) * 2 - 1;
+            const normalizedMouseY = (mouseY / window.innerHeight) * 2 - 1;
+            
+            // Calcular la influencia del mouse (más intenso cuanto más cerca)
+            concepts.forEach((concept, index) => {
+                const element = document.getElementById(concept.id);
+                if (element) {
+                    const position = conceptPositions[index];
+                    const velocity = conceptVelocities[index];
+                    
+                    // Factores para movimiento asimétrico
+                    const connectionsCount = countConnections(index);
+                    const connectionFactor = 0.5 + connectionsCount * 0.1; // Más conexiones = más movimiento
+                    const weightFactor = 1.2 - concept.weight * 0.5; // Conceptos con menor peso se mueven más
+                    
+                    // Eliminar completamente el movimiento automático
+                    // Solo permitir cambios en velocidad cuando hay interacción explícita
+                    
+                    // Influencia del mouse en movimiento (conceptos cercanos al mouse se mueven más)
+                    const rect = element.getBoundingClientRect();
+                    const elementCenterX = rect.left + rect.width / 2;
+                    const elementCenterY = rect.top + rect.height / 2;
+                    
+                    // Calcular distancia al mouse
+                    const distanceToMouse = Math.sqrt(
+                        Math.pow(mouseX - elementCenterX, 2) + 
+                        Math.pow(mouseY - elementCenterY, 2)
+                    );
+                    
+                    // Función de influencia inversa (más cerca = más influencia) - aumentar distancia para el área más grande
+                    const maxInfluenceDistance = Math.min(window.innerWidth, window.innerHeight) * 0.7;
+                    const mouseInfluence = Math.max(0, 1 - (distanceToMouse / maxInfluenceDistance));
+                    
+                    // Dirección desde el mouse al elemento
+                    let directionX = 0, directionY = 0;
+                    if (distanceToMouse > 0) {
+                        directionX = (elementCenterX - mouseX) / distanceToMouse;
+                        directionY = (elementCenterY - mouseY) / distanceToMouse;
+                    }
+                    
+                    // Mantener posición fija sin movimiento orbital
+                    // Solo usar la posición base original sin cambios automáticos
+                    const baseX = Math.cos(position.angle) * position.radius;
+                    const baseY = Math.sin(position.angle) * position.radius;
+                    
+                    // Añadir movimiento basado en la influencia del mouse
+                    // Solo aplicar el efecto del mouse si está cerca
+                    const mouseEffectThreshold = 0.2; // Umbral mínimo de influencia
+                    const mouseEffectX = mouseInfluence > mouseEffectThreshold ? 
+                                        directionX * mouseInfluence * 10 * weightFactor : 0;
+                    const mouseEffectY = mouseInfluence > mouseEffectThreshold ? 
+                                        directionY * mouseInfluence * 10 * weightFactor : 0;
+                    
+                    // Calcular posición aplicando solo efectos de interacción explícita
+                    // Eliminar todo movimiento ondulatorio y automático
+                    const time = Date.now() * 0.001;
+                    
+                    // Solo usar el efecto inicial durante la carga de la página
+                    const initialFactor = isInitialLoad ? 
+                                        Math.max(0, 1 - (time - startTime) / 3) : 0; // Desvanece después de 3 segundos
+                    
+                    const newX = baseX + 
+                                (Math.sin(time * velocity.speed + index) * 0.3 * weightFactor * initialFactor) + 
+                                mouseEffectX;
+                                
+                    const newY = baseY + 
+                                (Math.cos(time * velocity.speed + index * 1.3) * 0.3 * weightFactor * initialFactor) + 
+                                mouseEffectY;
+                    
+                    // Actualizar la posición
+                    position.x = newX;
+                    position.y = newY;
+                    
+                    // Ajustar el tamaño según la importancia/peso
+                    const scaleFactor = 0.8 + (concept.weight * 0.4);
+                    
+                    // Aplicar la posición actualizada
+                    const screenX = centerX + position.x * scale + offsetX;
+                    const screenY = centerY + position.y * scale + offsetY;
+                    
+                    element.style.left = `${screenX}px`;
+                    element.style.top = `${screenY}px`;
+                    element.style.transform = `scale(${scaleFactor * scale})`;
+                }
+            });
+            
+            drawConnections();
+            requestAnimationFrame(updatePositions);
+        }
+        
+        // Inicializar el mapa mental
+        createConceptElements();
+        updatePositions();
+        updateZoomLevel();
+    </script>
+</body>
+</html>
